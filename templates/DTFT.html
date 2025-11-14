@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DTFT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .form-container, .plot-container, .parameter-guide, .assistant-container {
+            width: 90%;
+            max-width: 900px;
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+        h1, h2, h3 { margin-top: 0; color: #222; }
+        .description {
+            background: #eef6ff;
+            padding: 14px;
+            border-left: 5px solid #007bff;
+            border-radius: 6px;
+            line-height: 1.6;
+        }
+        form {
+            display: block;
+            max-width: 700px;
+            margin-top: 12px;
+        }
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: bold;
+        }
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 6px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 15px;
+        }
+        .small-note { font-size: 0.9em; color: #555; margin-top:6px; }
+        button, input[type="submit"] {
+            margin-top: 16px;
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0056b3; }
+        .btn-secondary { background: #17a2b8; color: white; }
+        .btn-secondary:hover { background: #117a8b; }
+        .error { color: #b00020; margin-top: 12px; }
+        .param-grid { display: grid; grid-template-columns: 1fr 3fr; gap: 10px 20px; align-items: start; }
+        .param-grid dt { font-weight: bold; color: #222; }
+        .param-grid dd { margin: 0; color: #444; }
+        #wiki-result { border: 1px solid #e3e3e3; padding: 14px; border-radius: 8px; background: #fafafa; margin-top: 12px; min-height: 120px; }
+        hr.small { border: 0; border-top: 1px solid #eee; margin: 12px 0; }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width:700px;margin:30px auto;padding:20px;">
+        <h1 style="margin-bottom:15px;">DTFT Calculator</h1>
+
+        <!-- Description / README -->
+        <div class="readme" style="line-height:1.6;margin-bottom:20px;">
+            <p>
+                This tool computes the <b>Discrete-Time Fourier Transform (DTFT)</b> of a given signal <i>x(n)</i>.
+                You can enter either a <b>symbolic expression</b> (e.g. <code>sign(n)</code>, <code>cos(0.5*pi*n)</code>, 
+                <code>u(n)</code>) or a <b>numeric sequence</b> (e.g. <code>1 2 3 0</code>).
+                The tool will then compute and display the DTFT in symbolic and simplified form.
+            </p>
+        </div>
+
+        <!-- Input Form -->
+        <div class="form-container" style="margin-bottom:25px;">
+            <form method="POST">
+                <label for="sequence" style="display:block;margin-top:10px;">Enter your signal \(x(n)\):</label>
+                <small>Examples: <code>sign(n)</code>, <code>u(n)</code>, <code>cos(0.5*pi*n)</code>, <code>1 2 3 0</code></small><br><br>
+                <input type="text" id="sequence" name="sequence" placeholder="e.g. sign(n) or 1 2 3 0" 
+                       value="{{ request.form.get('sequence','') }}" 
+                       style="width:100%;max-width:400px;padding:6px;margin-bottom:15px;" required>
+                <button type="submit" style="padding:8px 16px;">Compute DTFT</button>
+            </form>
+        </div>
+
+        <!-- Parameter Guide -->
+        <div class="parameter-guide" style="margin-bottom:25px;">
+            <h3 style="margin-bottom:10px;">📘 Parameter Guide</h3>
+            <dl style="line-height:1.6;">
+                <dt>x(n)</dt>
+                <dd>Input signal (symbolic or numeric). Example: <code>sign(n)</code>, <code>u(n)</code>, <code>1 2 3</code>.</dd>
+                <dt>DTFT</dt>
+                <dd>Computed Discrete-Time Fourier Transform of x(n), shown in symbolic and simplified form.</dd>
+            </dl>
+        </div>
+
+        <!-- Error Message -->
+        {% if result and result.error %}
+        <div class="card" style="color:red;margin-bottom:20px;">
+            <strong>Error:</strong> {{ result.error }}
+        </div>
+        {% endif %}
+
+        <!-- Results -->
+        {% if result and not result.error %}
+        <div class="card" style="margin-bottom:20px;">
+            <h3>Original Signal</h3>
+            <p><b>Input:</b> {{ result.input_sequence }}</p>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+            <h3>DTFT (Full Expression)</h3>
+            <p><b>Expression:</b> {{ result.dtft_full }}</p>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+            <h3>DTFT (Simplified)</h3>
+            <p><b>Expression:</b> {{ result.dtft_simplified }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Search Assistant -->
+        <div class="assistant-container" style="margin-top:20px;">
+            <h3 style="margin-bottom:10px;">🔍 Search Assistant</h3>
+            <p style="color:#555;line-height:1.6;margin-bottom:10px;">
+                Explore concepts like <b>DTFT, discrete-time signals, delta functions, frequency analysis</b>, and 
+                <b>signal transforms</b>. A default query is automatically loaded below for your convenience.
+            </p>
+            <textarea id="search-box" rows="3" style="width:100%;padding:6px;margin-bottom:10px;">
+DTFT Calculator Discrete-Time Signals Frequency Analysis Delta Function
+            </textarea><br>
+            <button onclick="doSearch()" style="padding:8px 16px;margin-bottom:10px;">Search</button>
+            <iframe id="search-frame" style="width:100%;height:350px;border:1px solid #ddd;"></iframe>
+        </div>
+    </div>
+
+    <script>
+        function doSearch() {
+            const query = document.getElementById("search-box").value;
+            document.getElementById("search-frame").src =
+                "https://duckduckgo.com/?q=" + encodeURIComponent(query);
+        }
+
+        // Auto-load default query on page load
+        window.onload = function() { doSearch(); };
+    </script>
+</body>
+
+
+</html>

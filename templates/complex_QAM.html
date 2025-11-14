@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Complex QAM Modulation and Demodulation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .form-container, .plot-container, .parameter-guide, .assistant-container {
+            width: 90%;
+            max-width: 900px;
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+        h1, h2, h3 { margin-top: 0; color: #222; }
+        .description {
+            background: #eef6ff;
+            padding: 14px;
+            border-left: 5px solid #007bff;
+            border-radius: 6px;
+            line-height: 1.6;
+        }
+        form {
+            display: block;
+            max-width: 700px;
+            margin-top: 12px;
+        }
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: bold;
+        }
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 6px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 15px;
+        }
+        .small-note { font-size: 0.9em; color: #555; margin-top:6px; }
+        button, input[type="submit"] {
+            margin-top: 16px;
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0056b3; }
+        .btn-secondary { background: #17a2b8; color: white; }
+        .btn-secondary:hover { background: #117a8b; }
+        .error { color: #b00020; margin-top: 12px; }
+        .param-grid { display: grid; grid-template-columns: 1fr 3fr; gap: 10px 20px; align-items: start; }
+        .param-grid dt { font-weight: bold; color: #222; }
+        .param-grid dd { margin: 0; color: #444; }
+        #wiki-result { border: 1px solid #e3e3e3; padding: 14px; border-radius: 8px; background: #fafafa; margin-top: 12px; min-height: 120px; }
+        hr.small { border: 0; border-top: 1px solid #eee; margin: 12px 0; }
+    </style>
+</head>
+<body>
+    <div class="form-container" style="max-width:550px;margin:25px auto;padding:18px;">
+        <h1 style="margin-bottom:12px;font-size:1.5em;">Complex QAM Modulation and Demodulation</h1>
+
+        <p class="description" style="line-height:1.5;margin-bottom:18px;font-size:0.95em;">
+            Quadrature Amplitude Modulation (QAM) combines amplitude and phase modulation by transmitting 
+            two signals (in-phase and quadrature) on the same carrier. Complex QAM is widely used in Wi-Fi, LTE, and digital TV.
+        </p>
+
+        <form method="post">
+            <label style="display:block;margin-top:8px;font-size:0.9em;">Sampling Frequency (Hz):</label>
+            <input type="text" name="fs" value="{{ fs or 4096e6 }}" 
+                   style="width:100%;max-width:250px;padding:5px;margin-bottom:10px;">
+
+            <label style="display:block;margin-top:8px;font-size:0.9em;">Baseband Frequency 1 (Hz):</label>
+            <input type="text" name="fb1" value="{{ fb1 or 64e6 }}" 
+                   style="width:100%;max-width:250px;padding:5px;margin-bottom:10px;">
+
+            <label style="display:block;margin-top:8px;font-size:0.9em;">Baseband Frequency 2 (Hz):</label>
+            <input type="text" name="fb2" value="{{ fb2 or 64e6 }}" 
+                   style="width:100%;max-width:250px;padding:5px;margin-bottom:10px;">
+
+            <label style="display:block;margin-top:8px;font-size:0.9em;">Amplitude 1:</label>
+            <input type="text" name="A1" value="{{ A1 or 2 }}" 
+                   style="width:100%;max-width:180px;padding:5px;margin-bottom:10px;">
+
+            <label style="display:block;margin-top:8px;font-size:0.9em;">Amplitude 2:</label>
+            <input type="text" name="A2" value="{{ A2 or 1 }}" 
+                   style="width:100%;max-width:180px;padding:5px;margin-bottom:10px;">
+
+            <label style="display:block;margin-top:8px;font-size:0.9em;">FFT Size:</label>
+            <input type="text" name="N_fft" value="{{ N_fft or 2048 }}" 
+                   style="width:100%;max-width:180px;padding:5px;margin-bottom:10px;">
+
+            <label style="display:block;margin-top:8px;font-size:0.9em;">Carrier Frequency (Hz):</label>
+            <input type="text" name="fc" value="{{ fc or 900e6 }}" 
+                   style="width:100%;max-width:250px;padding:5px;margin-bottom:12px;">
+
+            <input type="submit" value="Generate Plots" style="padding:6px 14px;margin-top:8px;font-size:0.95em;">
+        </form>
+
+        {% if error %}
+        <div class="error" style="margin-top:12px;font-size:0.95em;">{{ error }}</div>
+        {% endif %}
+    </div>
+
+    <!-- 📌 Parameter Guide Section -->
+    <div class="parameter-guide" style="max-width:550px;margin:18px auto;padding:10px;font-size:0.95em;">
+        <h2 style="margin-bottom:8px;font-size:1.2em;">📌 Parameter Guide</h2>
+        <dl class="param-grid" style="line-height:1.5;">
+            <dt>Sampling Frequency (Hz)</dt>
+            <dd>Sampling rate for signal generation. Example: 4.096 GHz.</dd>
+
+            <dt>Baseband Frequency 1 (Hz)</dt>
+            <dd>Frequency of the in-phase component. Example: 64 MHz.</dd>
+
+            <dt>Baseband Frequency 2 (Hz)</dt>
+            <dd>Frequency of the quadrature component. Example: 64 MHz.</dd>
+
+            <dt>Amplitude 1</dt>
+            <dd>Amplitude of the in-phase signal. Example: 2 V.</dd>
+
+            <dt>Amplitude 2</dt>
+            <dd>Amplitude of the quadrature signal. Example: 1 V.</dd>
+
+            <dt>FFT Size</dt>
+            <dd>Number of points for FFT computation. Example: 2048.</dd>
+
+            <dt>Carrier Frequency (Hz)</dt>
+            <dd>Frequency of the carrier signal. Example: 900 MHz.</dd>
+        </dl>
+    </div>
+
+
+
+<!-- Plot/Result Section -->
+<!-- Plot/Result Section -->
+{% if plot_html %}
+<div class="result-container" style="max-width:850px;margin:18px auto;padding:15px;">
+    <h2 style="margin-bottom:10px;font-size:1.2em;">Plots</h2>
+    {{ plot_html|safe }}
+</div>
+{% endif %}
+
+     <div class="assistant-container">
+        <h3>🧠 Wikipedia Assistant</h3>
+        <p style="color:#555;">
+            Learn about <strong>Complex Quadrature Amplitude Modulation</strong>, sampling theory, quantization, and practical considerations.
+            Top two relevant Wikipedia summaries are auto-loaded below — click the link to open the full article.
+        </p>
+
+        <textarea id="wiki-query" rows="3" style="width:100%;">Quadrature Amplitude Modulation</textarea><br>
+        <button type="button" onclick="searchWiki()" class="btn-primary">Search Wikipedia</button>
+        <button type="button" onclick="refreshWiki()" class="btn-secondary" style="margin-left:8px;">🔄 Refresh Content</button>
+
+        <div id="wiki-result">⏳ Loading Wikipedia data...</div>
+    </div>
+
+    <script>
+    async function searchWiki() {
+        const query = document.getElementById("wiki-query").value.trim();
+        const resultDiv = document.getElementById("wiki-result");
+        if (!query) { resultDiv.innerHTML = "❌ Enter a search query."; return; }
+        resultDiv.innerHTML = "⏳ Fetching information from Wikipedia...";
+
+        try {
+            const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=2&prop=extracts&exintro=true&explaintext=true`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (!data.query || !data.query.pages) {
+                resultDiv.innerHTML = "❌ No Wikipedia data found for this query.";
+                return;
+            }
+
+            const pages = Object.values(data.query.pages).sort((a,b) => (a.index||0)-(b.index||0));
+            let html = "";
+            for (const page of pages) {
+                const title = page.title;
+                const extract = page.extract ? page.extract.split(/(?<=\.)\s+/).slice(0, 4).join(' ') : "(No summary available)";
+                const urlPage = "https://en.wikipedia.org/?curid=" + page.pageid;
+
+                html += `
+                    <div style="margin-bottom:14px;">
+                        <h4 style="margin:6px 0 8px 0;color:#0066cc;">${title}</h4>
+                        <p style="line-height:1.6;margin:0 0 8px 0;color:#333;">${extract}</p>
+                        <a href="${urlPage}" target="_blank" rel="noopener noreferrer">🔗 Read full article</a>
+                    </div>
+                    <hr class="small">
+                `;
+            }
+
+            html += `<p style="text-align:center;color:#666;margin-top:8px;">— End of summary —</p>`;
+            resultDiv.innerHTML = html;
+        } catch (err) {
+            console.error(err);
+            resultDiv.innerHTML = "⚠️ Error fetching Wikipedia content.";
+        }
+    }
+
+    function refreshWiki() {
+        const resultDiv = document.getElementById("wiki-result");
+        resultDiv.scrollIntoView({ behavior: "smooth", block: "start" });
+        resultDiv.innerHTML = "🔁 Refreshing Wikipedia content...";
+        setTimeout(searchWiki, 600);
+    }
+
+    window.onload = function() { searchWiki(); };
+    </script>
+</body>
+</html>

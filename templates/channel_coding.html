@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Channel Coding Simulation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .form-container, .plot-container, .parameter-guide, .assistant-container {
+            width: 90%;
+            max-width: 900px;
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+        h1, h2, h3 { margin-top: 0; color: #222; }
+        .description {
+            background: #eef6ff;
+            padding: 14px;
+            border-left: 5px solid #007bff;
+            border-radius: 6px;
+            line-height: 1.6;
+        }
+        form {
+            display: block;
+            max-width: 700px;
+            margin-top: 12px;
+        }
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: bold;
+        }
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 6px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 15px;
+        }
+        .small-note { font-size: 0.9em; color: #555; margin-top:6px; }
+        button, input[type="submit"] {
+            margin-top: 16px;
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0056b3; }
+        .btn-secondary { background: #17a2b8; color: white; }
+        .btn-secondary:hover { background: #117a8b; }
+        .error { color: #b00020; margin-top: 12px; }
+        .param-grid { display: grid; grid-template-columns: 1fr 3fr; gap: 10px 20px; align-items: start; }
+        .param-grid dt { font-weight: bold; color: #222; }
+        .param-grid dd { margin: 0; color: #444; }
+        #wiki-result { border: 1px solid #e3e3e3; padding: 14px; border-radius: 8px; background: #fafafa; margin-top: 12px; min-height: 120px; }
+        hr.small { border: 0; border-top: 1px solid #eee; margin: 12px 0; }
+    </style>
+</head>
+<body>
+    <div class="form-container" style="max-width:600px;margin:30px auto;padding:20px;">
+        <a href="/" class="home" style="display:inline-block;margin-bottom:15px;">← Back to Homepage</a>
+        <h1 style="margin-bottom:10px;">Channel Coding Simulation</h1>
+        <p class="description" style="line-height:1.6;margin-bottom:20px;">
+            This simulation demonstrates basic channel coding techniques such as Huffman Coding, Run Length Encoding (RLE), 
+            and LZW Compression. You can input a message, choose a coding algorithm, and optionally apply noise to the channel 
+            to observe how errors affect the encoded data.
+        </p>
+
+        <form method="POST">
+            <label for="algorithm" style="margin-top:10px;display:block;">Choose Algorithm:</label>
+            <select id="algorithm" name="algorithm" required style="width:100%;max-width:300px;padding:6px;margin-bottom:15px;">
+                <option value="huffman" {% if request.form.get('algorithm') == 'huffman' %}selected{% endif %}>Huffman Coding</option>
+                <option value="rle" {% if request.form.get('algorithm') == 'rle' %}selected{% endif %}>Run Length Encoding (RLE)</option>
+                <option value="lzw" {% if request.form.get('algorithm') == 'lzw' %}selected{% endif %}>LZW Compression</option>
+            </select>
+
+            <label for="message" style="margin-top:10px;display:block;">Input Message (string):</label>
+            <input type="text" id="message" name="message" value="{{ request.form.get('message', '') }}" required
+                   style="width:100%;max-width:400px;padding:6px;margin-bottom:15px;">
+
+            <input type="submit" value="Simulate" style="padding:8px 16px;margin-top:10px;">
+        </form>
+
+        {% if error %}
+        <div class="error" style="margin-top:15px;">Error: {{ error }}</div>
+        {% endif %}
+
+        {% if result %}
+        <div class="plot-container" style="margin-top:20px;">
+            <h3 style="margin-bottom:10px;">Simulation Result</h3>
+            <pre style="padding:10px;border:1px solid #ddd;">{{ result }}</pre>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 📌 Parameter Guide Section -->
+    <div class="parameter-guide" style="max-width:600px;margin:20px auto;padding:10px;">
+        <h2 style="margin-bottom:10px;">📌 Parameter Guide</h2>
+        <dl class="param-grid" style="line-height:1.6;">
+            <dt>Algorithm</dt>
+            <dd>
+                Choose the channel coding algorithm to apply. <br>
+                Options: <strong>Huffman Coding</strong>, <strong>Run Length Encoding (RLE)</strong>, <strong>LZW Compression</strong>. <br>
+                Each has different efficiency depending on the input message.
+            </dd>
+
+            <dt>Input Message</dt>
+            <dd>
+                The string message you want to encode. <br>
+                Example: "HELLO WORLD". Longer messages may show more compression effect.
+            </dd>
+
+        </dl>
+    </div>
+
+    <div class="assistant-container">
+        <h3>🧠 Wikipedia Assistant</h3>
+        <p style="color:#555;">
+            Learn about <strong>Channel coding</strong>Huffman, RLE, LZW encoding
+            Top two relevant Wikipedia summaries are auto-loaded below — click the link to open the full article.
+        </p>
+
+        <textarea id="wiki-query" rows="3" style="width:100%;">Huffman coding, RLE coding</textarea><br>
+        <button type="button" onclick="searchWiki()" class="btn-primary">Search Wikipedia</button>
+        <button type="button" onclick="refreshWiki()" class="btn-secondary" style="margin-left:8px;">🔄 Refresh Content</button>
+
+        <div id="wiki-result">⏳ Loading Wikipedia data...</div>
+    </div>
+
+    <script>
+    async function searchWiki() {
+        const query = document.getElementById("wiki-query").value.trim();
+        const resultDiv = document.getElementById("wiki-result");
+        if (!query) { resultDiv.innerHTML = "❌ Enter a search query."; return; }
+        resultDiv.innerHTML = "⏳ Fetching information from Wikipedia...";
+
+        try {
+            const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=2&prop=extracts&exintro=true&explaintext=true`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (!data.query || !data.query.pages) {
+                resultDiv.innerHTML = "❌ No Wikipedia data found for this query.";
+                return;
+            }
+
+            const pages = Object.values(data.query.pages).sort((a,b) => (a.index||0)-(b.index||0));
+            let html = "";
+            for (const page of pages) {
+                const title = page.title;
+                const extract = page.extract ? page.extract.split(/(?<=\.)\s+/).slice(0, 4).join(' ') : "(No summary available)";
+                const urlPage = "https://en.wikipedia.org/?curid=" + page.pageid;
+
+                html += `
+                    <div style="margin-bottom:14px;">
+                        <h4 style="margin:6px 0 8px 0;color:#0066cc;">${title}</h4>
+                        <p style="line-height:1.6;margin:0 0 8px 0;color:#333;">${extract}</p>
+                        <a href="${urlPage}" target="_blank" rel="noopener noreferrer">🔗 Read full article</a>
+                    </div>
+                    <hr class="small">
+                `;
+            }
+
+            html += `<p style="text-align:center;color:#666;margin-top:8px;">— End of summary —</p>`;
+            resultDiv.innerHTML = html;
+        } catch (err) {
+            console.error(err);
+            resultDiv.innerHTML = "⚠️ Error fetching Wikipedia content.";
+        }
+    }
+
+    function refreshWiki() {
+        const resultDiv = document.getElementById("wiki-result");
+        resultDiv.scrollIntoView({ behavior: "smooth", block: "start" });
+        resultDiv.innerHTML = "🔁 Refreshing Wikipedia content...";
+        setTimeout(searchWiki, 600);
+    }
+
+    window.onload = function() { searchWiki(); };
+    </script>
+</body>
+</html>

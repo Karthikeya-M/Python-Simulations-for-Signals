@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>3D Laplace Surface</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+</head>
+<body>
+<h2>Laplace Transform - 3D Surface Plot</h2>
+
+<form method="POST">
+    <label>Enter f(t): </label>
+    <input type="text" name="expr" placeholder="e.g., exp(-t)*sin(t)" style="width:300px" required>
+    <button type="submit">Compute</button>
+</form>
+
+{% if error %}
+<p style="color:red;">{{ error }}</p>
+{% endif %}
+
+{% if result %}
+<h3>Laplace Transform:</h3>
+<p> \( F(s) = {{ result }} \) </p>
+{% endif %}
+
+{% if plot_html %}
+<h3>3D Surface Plot of |F(s)|</h3>
+{{ plot_html | safe }}
+{% endif %}
+
+</body>
+</html>

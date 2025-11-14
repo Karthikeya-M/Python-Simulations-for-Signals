@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>8085 Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background-color: #f4f6f8;
+        }
+        h1 {
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            font-size: 15px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background: #fff;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 20px;
+            border: none;
+            border-radius: 5px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .result {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>8085 Simulator</h1>
+
+<form method="POST" action="/8085">
+    <label><b>Enter your 8085 Assembly Code:</b></label><br><br>
+    <textarea name="program" placeholder="Example:
+MVI A,05
+MVI B,03
+ADD B
+HLT">{{ request.form.program }}</textarea><br>
+    <button type="submit">Run Simulation</button>
+</form>
+
+{% if error %}
+<div class="error">Error: {{ error }}</div>
+{% endif %}
+
+{% if result %}
+<div class="result">
+    <h2>Simulation Result</h2>
+    <h3>Registers</h3>
+    <pre>{{ result.registers | tojson(indent=4) }}</pre>
+
+    <h3>Memory (first 20 bytes)</h3>
+    <pre>{{ result.memory_sample }}</pre>
+</div>
+{% endif %}
+
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laplace Transform Calculator</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover { background-color: #0056b3; }
+        .error { color: red; }
+        .result { margin-top: 20px; }
+        .description {
+            margin-top: 15px;
+            padding: 12px;
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 6px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Laplace Transform Calculator</h1>
+
+        <div class="description">
+            <p>
+                This tool computes the <strong>Laplace Transform</strong> of a given time-domain 
+                signal \(x(t)\). Enter a valid mathematical expression in terms of <code>t</code> 
+                (e.g., <code>cos(2*pi*f0*t)</code>, <code>exp(-a*t)*H(t)</code>) and click 
+                <em>Compute</em>. The output will include both the symbolic expression and a LaTeX-rendered form.
+            </p>
+        </div>
+
+        <form method="POST">
+            <label>Enter continuous-time signal x(t):</label>
+            <input type="text" name="signal_expr" placeholder="e.g., cos(2*pi*f0*t), exp(-a*t), H(t)" required>
+            <button type="submit">Compute Laplace Transform</button>
+        </form>
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+
+        {% if results %}
+            <div class="result">
+                {% for r in results %}
+                    <h3>{{ r.description }}</h3>
+                    <p><strong>Expression:</strong> {{ r.expr }}</p>
+                    <p><strong>LaTeX:</strong> \\( {{ r.latex }} \\)</p>
+                    <hr>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+         <!-- 🧠 Wikipedia Assistant -->
+    <div class="assistant-container">
+        <h3>🧠 Wikipedia Assistant</h3>
+        <p style="color:#555;">
+            Explore more about <strong>Laplace transform</strong>.  
+            This section automatically fetches the top 2 most relevant Wikipedia summaries for your query.
+        </p>
+
+        <textarea id="wiki-query" rows="3" style="width:100%;">Laplace transform</textarea><br>
+        <button onclick="searchWiki()">Search Wikipedia</button>
+
+        <div id="wiki-result">⏳ Loading Wikipedia data...</div>
+        <button id="refresh-btn" onclick="refreshWiki()" 
+            style="margin-top:12px;padding:8px 16px;background:#17a2b8;color:white;
+                   border:none;border-radius:6px;cursor:pointer;font-size:15px;">
+            🔄 Refresh Content
+        </button>
+    </div>
+
+    <script>
+    async function searchWiki() {
+        const query = document.getElementById("wiki-query").value.trim();
+        const resultDiv = document.getElementById("wiki-result");
+        resultDiv.innerHTML = "⏳ Fetching information from Wikipedia...";
+
+        try {
+            const response = await fetch(`https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=2&prop=extracts&exintro=true&explaintext=true`);
+            const data = await response.json();
+
+            if (data.query && data.query.pages) {
+                const pages = Object.values(data.query.pages);
+                resultDiv.innerHTML = "";
+
+                pages.forEach(page => {
+                    const title = page.title;
+                    const extract = page.extract.split(". ").slice(0, 4).join(". ") + ".";
+                    const url = "https://en.wikipedia.org/?curid=" + page.pageid;
+
+                    resultDiv.innerHTML += `
+                        <h4>${title}</h4>
+                        <p>${extract}</p>
+                        <a href="${url}" target="_blank">🔗 Read full article</a>
+                        <hr>
+                    `;
+                });
+            } else {
+                resultDiv.innerHTML = "❌ No Wikipedia data found for this query.";
+            }
+        } catch (error) {
+            resultDiv.innerHTML = "⚠️ Error fetching Wikipedia content.";
+        }
+    }
+
+    function refreshWiki() {
+        const resultDiv = document.getElementById("wiki-result");
+        resultDiv.scrollIntoView({ behavior: "smooth", block: "start" });
+        resultDiv.innerHTML = "🔁 Refreshing Wikipedia content...";
+        setTimeout(searchWiki, 600);
+    }
+
+    window.onload = function() {
+        searchWiki();
+    };
+    </script>
+</body>
+</html>

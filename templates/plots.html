@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Generated Plots</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            background: #f4f7fb;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container, .parameter-guide, .assistant-container {
+            width: 90%;
+            max-width: 900px;
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+        h1, h2, h3 { color: #222; margin-top: 0; }
+        .description {
+            background: #eef6ff;
+            padding: 14px;
+            border-left: 5px solid #007bff;
+            border-radius: 6px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .plot {
+            margin-top: 25px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+        .param-grid {
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            gap: 10px 20px;
+            align-items: start;
+        }
+        .param-grid dt { font-weight: bold; color: #222; }
+        .param-grid dd { margin: 0; color: #444; }
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0056b3; }
+        .btn-secondary { background: #17a2b8; color: white; }
+        .btn-secondary:hover { background: #117a8b; }
+        #wiki-result {
+            border: 1px solid #e3e3e3;
+            padding: 14px;
+            border-radius: 8px;
+            background: #fafafa;
+            margin-top: 12px;
+            min-height: 120px;
+        }
+        hr.small { border: 0; border-top: 1px solid #eee; margin: 12px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Generated Plots</h1>
+
+        <div class="description">
+            <p>
+                This page visualizes dynamically generated plots from your selected simulations or expressions. 
+                The plots are rendered using <strong>Matplotlib</strong> and support interactivity such as zoom, 
+                pan, and hover-based value inspection.
+            </p>
+            <p>
+                These visualizations help analyze signal behaviors, system responses, and transformations 
+                in time or frequency domains for deeper insights into your computations.
+            </p>
+        </div>
+
+        {% for plot_html in plots %}
+            <div class="plot">
+                {{ plot_html | safe }}
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Parameter Guide -->
+    <div class="parameter-guide">
+        <h2>📘 Plot Interpretation Guide</h2>
+        <dl class="param-grid">
+            <dt>Interactive Features</dt>
+            <dd>Each plot allows zooming and panning for detailed exploration. Hovering shows coordinate details.</dd>
+
+            <dt>Signal Behavior</dt>
+            <dd>Observe waveform characteristics such as amplitude, frequency, or phase variations over time.</dd>
+
+            <dt>Frequency Analysis</dt>
+            <dd>Fourier or Laplace transform plots show frequency-domain magnitude and phase relationships.</dd>
+
+            <dt>Axes and Scaling</dt>
+            <dd>Ensure axis labels match your physical parameters — e.g., time (s), frequency (Hz), or amplitude (V).</dd>
+        </dl>
+    </div>
+
+    <!-- Wikipedia Assistant -->
+    <div class="assistant-container">
+        <h3>🧠 Wikipedia Assistant</h3>
+        <p style="color:#555;">
+            Explore more about <strong>signal visualization and data plotting with Matplotlib</strong>.  
+            The assistant automatically fetches the top 2 most relevant Wikipedia summaries for your query.
+        </p>
+
+        <textarea id="wiki-query" rows="3" style="width:100%;">Impulse, Unit, Ramp signals</textarea><br>
+        <button type="button" onclick="searchWiki()" class="btn-primary">Search Wikipedia</button>
+        <button type="button" onclick="refreshWiki()" class="btn-secondary" style="margin-left:8px;">🔄 Refresh Content</button>
+
+        <div id="wiki-result">⏳ Loading Wikipedia data...</div>
+    </div>
+
+    <script>
+    async function searchWiki() {
+        const query = document.getElementById("wiki-query").value.trim();
+        const resultDiv = document.getElementById("wiki-result");
+        if (!query) { resultDiv.innerHTML = "❌ Please enter a topic."; return; }
+        resultDiv.innerHTML = "⏳ Fetching information from Wikipedia...";
+
+        try {
+            const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=2&prop=extracts&exintro=true&explaintext=true`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (!data.query || !data.query.pages) {
+                resultDiv.innerHTML = "❌ No Wikipedia data found for this query.";
+                return;
+            }
+
+            const pages = Object.values(data.query.pages).sort((a,b)=>(a.index||0)-(b.index||0));
+            let html = "";
+            for (const page of pages) {
+                const title = page.title;
+                const extract = page.extract ? page.extract.split(/(?<=\.)\s+/).slice(0, 4).join(' ') : "(No summary available)";
+                const pageUrl = "https://en.wikipedia.org/?curid=" + page.pageid;
+                html += `
+                    <div style="margin-bottom:14px;">
+                        <h4 style="color:#0066cc;">${title}</h4>
+                        <p style="line-height:1.6;color:#333;">${extract}</p>
+                        <a href="${pageUrl}" target="_blank" rel="noopener noreferrer">🔗 Read full article</a>
+                    </div>
+                    <hr class="small">
+                `;
+            }
+            html += `<p style="text-align:center;color:#666;margin-top:8px;">— End of summaries —</p>`;
+            resultDiv.innerHTML = html;
+        } catch (err) {
+            console.error(err);
+            resultDiv.innerHTML = "⚠️ Error fetching Wikipedia content.";
+        }
+    }
+
+    function refreshWiki() {
+        const resultDiv = document.getElementById("wiki-result");
+        resultDiv.scrollIntoView({ behavior: "smooth", block: "start" });
+        resultDiv.innerHTML = "🔁 Refreshing Wikipedia content...";
+        setTimeout(searchWiki, 600);
+    }
+
+    window.onload = function() {
+        searchWiki();
+    };
+    </script>
+
+</body>
+</html>
